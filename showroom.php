@@ -6,6 +6,9 @@ $token = $_POST['token'];
 /** @var string */
 $command = $_POST['command'];
 
+/** @var string */
+$userName = $_POST['user_name'];
+
 /** @var array */
 $information = split(' ', $_POST['text']);
 
@@ -17,14 +20,19 @@ $allowedShowroomNames = [
   'shop'
 ];
 
+/** @var string */
+$slackToken = 'yourToken';
+
 /**
  * @param string $id
  */
 function getStatus($id)
 {
   $fileExists = file_exists('showroom/' . $id . '.lock');
+
   if ($fileExists) {
-    return $id . ' is locked';
+    $userName = file_get_contents('showroom/' . $id . '.lock');
+    return $id . ' is locked by @' . $userName;
   }
 
   return $id . ' is free';
@@ -33,11 +41,12 @@ function getStatus($id)
 /**
  * @param string $status
  * @param string $id
+ * @param string $userName
  */
-function setStatus($id, $status)
+function setStatus($id, $status, $userName)
 {
   if ($status === 'true') {
-    $fileStatus = file_put_contents('showroom/' . $id . '.lock', ' ');
+    $fileStatus = file_put_contents('showroom/' . $id . '.lock', $userName);
 
     if ($fileStatus === false) {
       return 'not able to write lock file.';
@@ -57,7 +66,7 @@ function setStatus($id, $status)
 if (
   $command === '/showroom'
   && !empty($information)
-  && $token === 'yourSlackToken'
+  && $token === $slackToken
 ) {
   $message = 'your command was not valid';
 
@@ -69,7 +78,8 @@ if (
   if(!empty($information[1])) {
     $message = setStatus(
       $information[0],
-      $information[1]
+      $information[1],
+      $userName
     );
   } else {
     $message = getStatus($information[0]);
